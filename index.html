@@ -272,6 +272,11 @@
       font-family: 'Instrument Serif', serif;
       font-size: 1.3rem; color: var(--red); font-style: italic;
       margin-bottom: .85rem; font-weight: 400;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .avatar img {
+      width: 100%; height: 100%; object-fit: cover;
+      border-radius: 12px;
     }
     .student-name {
       font-size: .95rem; font-weight: 700; margin-bottom: .2rem;
@@ -318,6 +323,10 @@
       font-family: 'Instrument Serif', serif;
       font-size: 1.7rem; color: #fff; font-style: italic;
       margin-bottom: 1rem;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .modal-avatar img {
+      width: 100%; height: 100%; object-fit: cover; border-radius: 14px;
     }
     .modal-name { font-size: 1.3rem; font-weight: 700; }
     .modal-roll { font-size: .8rem; opacity: .75; margin-top: .15rem; }
@@ -514,7 +523,7 @@
     </div>
     <div class="filter-chips">
       <button class="chip active" onclick="setFilter(this,'all')">All</button>
-      <button class="chip" onclick="setFilter(this,'cr')">CR</button>
+      <button class="chip" onclick="setFilter(this,'cr')">CR / Officials</button>
       <button class="chip" onclick="setFilter(this,'regular')">Regular</button>
     </div>
   </div>
@@ -574,18 +583,25 @@
      hometown: City/District   (optional)
      role    : "regular" | "cr" | "acr" | "treasurer" | "secretary" etc.
      note    : Short tagline/bio shown on card (optional)
+     photo   : URL or path to the student's photo (optional)
+               → To use a GitHub-hosted image:
+                 1. Upload photo to your repo (e.g. photos/tanimul.jpg)
+                 2. Set photo to "photos/tanimul.jpg"
+               → To use any online image, paste the full URL:
+                 photo: "https://example.com/photo.jpg"
+               → Leave as "" or remove the field to show initials instead
    ─────────────────────────────────────────────────────────────── */
 const STUDENTS = [
-  { name: "Tanimul Islam",   roll: "-", facebook: "tanimul.tonmoy.1#",   hometown: "Pabna",       role: "regular" },
-  { name: "Mahir Shariar",     roll: "-", facebook: "mahir.shariar.1610",   hometown: "Noakhali",      role: "regular" },
-  { name: "Rifa Tasnia",     roll: "-", facebook: "profile.php?id=61586937622369#",   hometown: "Bagerhat",  role: "regular" },
-  { name: "Nabil Shihab",    roll: "-", facebook: "profile.php?id=61567982654634#",  hometown: "Dhaka",    role: "regular" },
-  { name: "Saif Al Amir Chowdhury Apurba",   roll: "-", facebook: "afsanulhauk.mishan",   hometown: "Cox's Bazar",      role: "regular" },
-  { name: "Iftekhar Ahmad Khan",      roll: "-", facebook: "iftekhar.ahmad.arnob.2025",    hometown: "Rajshahi",     role: "regular" },
-  { name: "Sunna jamali",      roll: "-", facebook: "sunna.jamali.1#",    hometown: "Jamalpur",     role: "regular" },
-  { name: "Md. Washy Ur Rahman",       roll: "-", facebook: "md.washyurrhaman.10",      hometown: "Rajshahi ",  role: "regular" },
-  { name: "MD Zehad Hossain",    roll: "-", facebook: "sleepysloth44",   hometown: "Dhaka",      role: "regular" },
-  { name: "Anonto Chandra Sen",    roll: "-", facebook: "anonto.sen.681594",  hometown: "Kishoreganj",     role: "regular" },
+  { name: "Tanimul Islam",   roll: "-", facebook: "tanimul.tonmoy.1#",   hometown: "Pabna",       role: "regular", photo: "" },
+  { name: "Mahir Shariar",     roll: "-", facebook: "mahir.shariar.1610",   hometown: "Noakhali",      role: "regular", photo: "" },
+  { name: "Rifa Tasnia",     roll: "-", facebook: "profile.php?id=61586937622369#",   hometown: "Bagerhat",  role: "regular", photo: "" },
+  { name: "Nabil Shihab",    roll: "-", facebook: "profile.php?id=61567982654634#",  hometown: "Dhaka",    role: "regular", photo: "" },
+  { name: "Saif Al Amir Chowdhury Apurba",   roll: "-", facebook: "afsanulhauk.mishan",   hometown: "Cox's Bazar",      role: "regular", photo: "" },
+  { name: "Iftekhar Ahmad Khan",      roll: "-", facebook: "iftekhar.ahmad.arnob.2025",    hometown: "Rajshahi",     role: "regular", photo: "" },
+  { name: "Sunna jamali",      roll: "-", facebook: "sunna.jamali.1#",    hometown: "Jamalpur",     role: "regular", photo: "" },
+  { name: "Md. Washy Ur Rahman",       roll: "-", facebook: "md.washyurrhaman.10",      hometown: "Rajshahi ",  role: "regular", photo: "" },
+  { name: "MD Zehad Hossain",    roll: "-", facebook: "sleepysloth44",   hometown: "Dhaka",      role: "regular", photo: "" },
+  { name: "Anonto Chandra Sen",    roll: "-", facebook: "anonto.sen.681594",  hometown: "Kishoreganj",     role: "regular", photo: "" },
 ];
 
 /* ───────────────────────────────────────────────────────────────
@@ -642,10 +658,13 @@ function buildStudents(filter='all', query='') {
   grid.innerHTML = filtered.map(s => {
     const rl = roleLabel(s.role);
     const highlight = s.role === 'cr' || s.role === 'acr';
+    const avatarContent = s.photo
+      ? `<img src="${s.photo}" alt="${s.name}" onerror="this.parentElement.textContent='${initials(s.name)}'">`
+      : initials(s.name);
     return `<div class="student-card" onclick="openModal(${STUDENTS.indexOf(s)})">
       <div class="card-accent"></div>
       <div class="card-body">
-        <div class="avatar">${initials(s.name)}</div>
+        <div class="avatar">${avatarContent}</div>
         <div class="student-name">${s.name}</div>
         <div class="card-tags">
           ${highlight ? `<span class="tag highlight">${rl}</span>` : ''}
@@ -694,7 +713,12 @@ function buildUpcoming() {
 /* ─── MODAL ──────────────────────────────────────────────────── */
 function openModal(idx) {
   const s = STUDENTS[idx];
-  document.getElementById('mAvatar').textContent = initials(s.name);
+  const mAvatar = document.getElementById('mAvatar');
+  if (s.photo) {
+    mAvatar.innerHTML = `<img src="${s.photo}" alt="${s.name}" onerror="this.parentElement.innerHTML='${initials(s.name)}'">`;
+  } else {
+    mAvatar.textContent = initials(s.name);
+  }
   document.getElementById('mName').textContent   = s.name;
   document.getElementById('mRoll').textContent   = 'Roll: ' + s.roll;
   const fbLink = s.facebook

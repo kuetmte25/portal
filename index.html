@@ -278,6 +278,14 @@
       width: 100%; height: 100%; object-fit: cover;
       border-radius: 12px;
     }
+    .avatar img.avatar-clickable {
+      cursor: zoom-in;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .avatar img.avatar-clickable:hover {
+      transform: scale(1.08);
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+    }
     .student-name {
       font-size: .95rem; font-weight: 700; margin-bottom: .2rem;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -328,6 +336,59 @@
     .modal-avatar img {
       width: 100%; height: 100%; object-fit: cover; border-radius: 14px;
     }
+    .modal-avatar.has-photo {
+      cursor: zoom-in;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .modal-avatar.has-photo:hover {
+      transform: scale(1.06);
+      box-shadow: 0 6px 24px rgba(0,0,0,.35);
+    }
+
+    /* ─── PHOTO LIGHTBOX ──────────────────────────────────────── */
+    .lightbox {
+      position: fixed; inset: 0; z-index: 400;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: blur(8px);
+      display: none; align-items: center; justify-content: center;
+      padding: 1.5rem;
+      animation: lbFadeIn .2s ease;
+    }
+    .lightbox.open { display: flex; }
+    @keyframes lbFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .lightbox-img-wrap {
+      position: relative;
+      max-width: min(520px, 90vw);
+      animation: lbZoomIn .25s cubic-bezier(.22,1,.36,1);
+    }
+    @keyframes lbZoomIn {
+      from { transform: scale(.82); opacity: 0; }
+      to   { transform: scale(1);   opacity: 1; }
+    }
+    .lightbox-img-wrap img {
+      width: 100%; border-radius: 20px;
+      box-shadow: 0 24px 64px rgba(0,0,0,.6);
+      display: block;
+    }
+    .lightbox-name {
+      text-align: center; color: #fff;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1rem; font-weight: 600;
+      margin-top: 1rem; letter-spacing: .01em;
+    }
+    .lightbox-close {
+      position: absolute; top: -14px; right: -14px;
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,.15);
+      border: 1.5px solid rgba(255,255,255,.3);
+      color: #fff; font-size: 1rem; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background .2s;
+    }
+    .lightbox-close:hover { background: rgba(255,255,255,.3); }
     .modal-name { font-size: 1.3rem; font-weight: 700; }
     .modal-roll { font-size: .8rem; opacity: .75; margin-top: .15rem; }
     .modal-body { padding: 1.5rem 2rem 1.5rem; }
@@ -564,7 +625,16 @@
   </div>
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════
+<!-- ─── PHOTO LIGHTBOX ──────────────────────────────────────────── -->
+<div class="lightbox" id="photoLightbox" onclick="closeLightbox(event)">
+  <div class="lightbox-img-wrap" id="lightboxWrap">
+    <button class="lightbox-close" onclick="closeLightboxBtn()">✕</button>
+    <img id="lightboxImg" src="" alt="" />
+    <div class="lightbox-name" id="lightboxName"></div>
+  </div>
+</div>
+
+
      ╔═══════════════════════════════════════════════════════════╗
      ║                  ★ DATA CONFIG ZONE ★                    ║
      ║  Edit STUDENTS and EVENTS arrays below to update content  ║
@@ -659,7 +729,7 @@ function buildStudents(filter='all', query='') {
     const rl = roleLabel(s.role);
     const highlight = s.role === 'cr' || s.role === 'acr';
     const avatarContent = s.photo
-      ? `<img src="${s.photo}" alt="${s.name}" onerror="this.parentElement.textContent='${initials(s.name)}'">`
+      ? `<img src="${s.photo}" alt="${s.name}" class="avatar-clickable" onclick="event.stopPropagation();openLightbox('${s.photo}','${s.name.replace(/'/g,"\\'")}');" onerror="this.parentElement.textContent='${initials(s.name)}'">`
       : initials(s.name);
     return `<div class="student-card" onclick="openModal(${STUDENTS.indexOf(s)})">
       <div class="card-accent"></div>
@@ -715,9 +785,13 @@ function openModal(idx) {
   const s = STUDENTS[idx];
   const mAvatar = document.getElementById('mAvatar');
   if (s.photo) {
-    mAvatar.innerHTML = `<img src="${s.photo}" alt="${s.name}" onerror="this.parentElement.innerHTML='${initials(s.name)}'">`;
+    mAvatar.innerHTML = `<img src="${s.photo}" alt="${s.name}" onerror="this.parentElement.innerHTML='${initials(s.name)}'; this.parentElement.classList.remove('has-photo'); this.parentElement.onclick=null;">`;
+    mAvatar.classList.add('has-photo');
+    mAvatar.onclick = () => openLightbox(s.photo, s.name);
   } else {
     mAvatar.textContent = initials(s.name);
+    mAvatar.classList.remove('has-photo');
+    mAvatar.onclick = null;
   }
   document.getElementById('mName').textContent   = s.name;
   document.getElementById('mRoll').textContent   = 'Roll: ' + s.roll;
@@ -740,6 +814,25 @@ function closeModal() {
 }
 function closeModalOutside(e) {
   if(e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+/* ─── PHOTO LIGHTBOX ─────────────────────────────────────────── */
+function openLightbox(src, name) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightboxImg').alt = name;
+  document.getElementById('lightboxName').textContent = name;
+  document.getElementById('photoLightbox').classList.add('open');
+  document.addEventListener('keydown', lightboxKeyClose);
+}
+function closeLightboxBtn() {
+  document.getElementById('photoLightbox').classList.remove('open');
+  document.removeEventListener('keydown', lightboxKeyClose);
+}
+function closeLightbox(e) {
+  if (e.target === document.getElementById('photoLightbox')) closeLightboxBtn();
+}
+function lightboxKeyClose(e) {
+  if (e.key === 'Escape') closeLightboxBtn();
 }
 
 /* ─── PAGE SWITCHING ─────────────────────────────────────────── */

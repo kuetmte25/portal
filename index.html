@@ -291,7 +291,7 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .student-roll {
-      font-size: .75rem; color: var(--red); font-weight: 600;
+      font-size: .75rem; color: var(--muted); font-weight: 600;
       letter-spacing: .04em; margin-bottom: .6rem;
     }
     .card-tags { display: flex; gap: .35rem; flex-wrap: wrap; }
@@ -734,6 +734,7 @@ function buildStudents(filter='all', query='') {
     const matchSearch = !q || s.name.toLowerCase().includes(q) || s.roll.includes(q);
     return matchFilter && matchSearch;
   });
+  filtered.sort((a,b) => a.roll.localeCompare(b.roll, undefined, {numeric:true}));
   if(filtered.length === 0) {
     grid.innerHTML = '<p style="color:var(--muted);padding:2rem;grid-column:1/-1;">No students match your search.</p>';
     return;
@@ -749,6 +750,7 @@ function buildStudents(filter='all', query='') {
       <div class="card-body">
         <div class="avatar">${avatarContent}</div>
         <div class="student-name">${s.name}</div>
+        <div class="student-roll">Roll: ${s.roll}</div>
         <div class="card-tags">
           ${highlight ? `<span class="tag highlight">${rl}</span>` : ''}
           ${s.hometown ? `<span class="tag">${s.hometown}</span>` : ''}
